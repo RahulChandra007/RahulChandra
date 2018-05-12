@@ -1,0 +1,78 @@
+I was recently asked a SQL question in an interview to find the missing checks from a table. 
+Given a table with two columns
+1) customer 
+2) check_num
+The check numbers are in sequence and check is missing somewhere in between the sequence.
+
+drop table cust_tran;
+
+create table cust_tran(customer varchar2(10), check_num integer);
+
+delete from cust_tran;
+
+insert into cust_tran values('cust1',1);
+insert into cust_tran values('cust1',2);
+insert into cust_tran values('cust1',3);
+insert into cust_tran values('cust1',4);
+insert into cust_tran values('cust1',5);
+--insert into cust_tran values('cust1',5);
+insert into cust_tran values('cust1',6);
+insert into cust_tran values('cust1',7);
+insert into cust_tran values('cust1',8);
+insert into cust_tran values('cust1',9);
+insert into cust_tran values('cust1',10);
+insert into cust_tran values('cust2',1);
+insert into cust_tran values('cust2',2);
+insert into cust_tran values('cust2',3);
+insert into cust_tran values('cust2',4);
+insert into cust_tran values('cust2',5);
+insert into cust_tran values('cust2',6);
+insert into cust_tran values('cust2',7);
+insert into cust_tran values('cust2',8);
+insert into cust_tran values('cust2',9);
+insert into cust_tran values('cust2',10);
+insert into cust_tran values('cust2',11);
+insert into cust_tran values('cust2',12);
+insert into cust_tran values('cust2',13);
+insert into cust_tran values('cust2',14);
+insert into cust_tran values('cust2',15);
+
+select * from cust_tran;
+
+---inserted duplicates, therefore deleting 
+--delete from cust_tran where rowid in (select rowid from ( select customer, check_num, 
+--                                                          row_number() over (partition by customer, check_num order by  customer, check_num) as rn
+--                                                          from cust_tran
+--                                                          )
+--                                              where rn <> 1
+--                                          );
+--                                          
+
+---Missing Checks
+delete from cust_tran where customer =  'cust1' and check_num in (3,7);
+delete from cust_tran
+where customer = 'cust2'
+and check_num in (3,4);
+
+select * from cust_tran;
+--Check 3, 7 is mising for cust1
+
+  select y.* from cust_tran x right outer join (
+  with check_range as(
+  select distinct customer, max(check_num) over (partition by customer) as max_check_num,
+                  min(check_num) over (partition by customer)  min_check_num
+  from cust_tran
+  ),
+  rws as (
+  select rownum x from dual connect by level <= 100
+  )
+  select distinct ct.customer,r.x as check_num
+  from cust_tran ct
+  join check_range cr on cr.customer = ct.customer
+  join rws r on r.x >= cr.min_check_num
+     and r.x <= cr.max_check_num
+     order by customer, r.x) y
+     on x.customer = y.customer and x.check_num =y.check_num
+     where x.check_num is null
+     order by y.customer,y.check_num;
+     
