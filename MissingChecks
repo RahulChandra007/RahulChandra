@@ -50,12 +50,11 @@ select * from cust_tran;
 
 ---Missing Checks
 delete from cust_tran where customer =  'cust1' and check_num in (3,7);
-delete from cust_tran
-where customer = 'cust2'
-and check_num in (3,4);
+delete from cust_tran where customer = 'cust2' and check_num in (3,4);
 
 select * from cust_tran;
 --Check 3, 7 is mising for cust1
+--Check 3, 4 is mising for cust2
 
   select y.* from cust_tran x right outer join (
   with check_range as(
